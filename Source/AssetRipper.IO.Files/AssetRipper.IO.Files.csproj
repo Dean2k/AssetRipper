@@ -13,5 +13,4 @@
 		<PackageReference Include="SharpCompress" Version="0.37.2" />
 		<PackageReference Include="ZstdSharp.Port" Version="0.8.1" />
 	</ItemGroup>
-
 </Project>
