@@ -94,59 +94,63 @@ namespace AssetRipper.Processing.AnimationClips
 				{
 					int curveID = frame.Curves[curveIdx].Index;
 					IGenericBinding binding = GetBinding(curveID);
-					string path = GetCurvePath(binding.Path);
-					StreamedCurveKey curve;
-					if (binding.IsTransform())
+					if (binding != null)
 					{
-						int transformDim = binding.TransformType().GetDimension();
-						if (frameIdx == 0) // first StreamedFrame only contains PPtrCurves, skip
+						string path = GetCurvePath(binding.Path);
+						StreamedCurveKey curve;
+						if (binding.IsTransform())
 						{
-							curveIdx += transformDim;
+							int transformDim = binding.TransformType().GetDimension();
+							if (frameIdx == 0) // first StreamedFrame only contains PPtrCurves, skip
+							{
+								curveIdx += transformDim;
+								continue;
+							}
+							for (int offset = 0; offset < transformDim; offset++)
+							{
+								curve = frame.Curves[curveIdx];
+								if (doSlopeCalc)
+								{
+									if (TryGetNextFrame(streamedFrames, frameIdx, curveID, out StreamedFrame? nextFrame, out int nextCurveIdx))
+									{
+										StreamedCurveKey nextCurve = nextFrame.Curves[nextCurveIdx + offset];
+										curve.CalculateSlopes(frame.Time, nextFrame.Time, nextCurve, UseNegInfSlopes);
+									}
+								}
+								curveValues[offset] = curve.Value;
+								inSlopeValues[offset] = curve.InSlope;
+								outSlopeValues[offset] = curve.OutSlope;
+								curveIdx++;
+							}
+							AddTransformCurve(frame.Time, binding.TransformType(), curveValues, inSlopeValues, outSlopeValues, 0, path);
 							continue;
 						}
-						for (int offset = 0; offset < transformDim; offset++)
+						curve = frame.Curves[curveIdx];
+						if (!binding.IsPPtrCurve()) // Skip slope calculation for PPtrCurves
 						{
-							curve = frame.Curves[curveIdx];
+							if (frameIdx == 0) // first StreamedFrame only contains PPtrCurves, skip
+							{
+								curveIdx++;
+								continue;
+							}
 							if (doSlopeCalc)
 							{
 								if (TryGetNextFrame(streamedFrames, frameIdx, curveID, out StreamedFrame? nextFrame, out int nextCurveIdx))
 								{
-									StreamedCurveKey nextCurve = nextFrame.Curves[nextCurveIdx + offset];
+									StreamedCurveKey nextCurve = nextFrame.Curves[nextCurveIdx];
 									curve.CalculateSlopes(frame.Time, nextFrame.Time, nextCurve, UseNegInfSlopes);
 								}
 							}
-							curveValues[offset] = curve.Value;
-							inSlopeValues[offset] = curve.InSlope;
-							outSlopeValues[offset] = curve.OutSlope;
-							curveIdx++;
 						}
-						AddTransformCurve(frame.Time, binding.TransformType(), curveValues, inSlopeValues, outSlopeValues, 0, path);
-						continue;
-					}
-					curve = frame.Curves[curveIdx];
-					if (!binding.IsPPtrCurve()) // Skip slope calculation for PPtrCurves
-					{
-						if (frameIdx == 0) // first StreamedFrame only contains PPtrCurves, skip
+						if (binding.CustomType == (byte)BindingCustomType.None)
 						{
-							curveIdx++;
-							continue;
+							AddDefaultCurve(binding, path, frame.Time, curve.Value, curve.InSlope, curve.OutSlope);
 						}
-						if (doSlopeCalc)
+						else
 						{
-							if (TryGetNextFrame(streamedFrames, frameIdx, curveID, out StreamedFrame? nextFrame, out int nextCurveIdx))
-							{
-								StreamedCurveKey nextCurve = nextFrame.Curves[nextCurveIdx];
-								curve.CalculateSlopes(frame.Time, nextFrame.Time, nextCurve, UseNegInfSlopes);
-							}
+							AddCustomCurve(binding, path, frame.Time, curve.Value, curve.InSlope, curve.OutSlope);
 						}
-					}
-					if (binding.CustomType == (byte)BindingCustomType.None)
-					{
-						AddDefaultCurve(binding, path, frame.Time, curve.Value, curve.InSlope, curve.OutSlope);
-					}
-					else
-					{
-						AddCustomCurve(binding, path, frame.Time, curve.Value, curve.InSlope, curve.OutSlope);
+						curveIdx++;
 					}
 					curveIdx++;
 				}
@@ -564,7 +568,9 @@ namespace AssetRipper.Processing.AnimationClips
 					return binding;
 				}
 			}
-			throw new ArgumentException($"Binding with index {index} hasn't been found", nameof(index));
+			return null;
+			//throw new ArgumentException($"Binding with index {index} hasn't been found", nameof(index));
+			
 		}
 
 		private static bool TryGetNextFrame(IReadOnlyList<StreamedFrame> streamedFrames, int currentFrame, int curveID, [MaybeNullWhen(false)] out StreamedFrame nextFrame, out int curveIdx)
