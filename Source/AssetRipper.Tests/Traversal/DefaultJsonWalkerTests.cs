@@ -1,5 +1,6 @@
 ﻿using AssetRipper.Assets;
 using AssetRipper.Export.PrimaryContent;
+using AssetRipper.SourceGenerated.Extensions;
 using System.Text.Json.Nodes;
 
 namespace AssetRipper.Tests.Traversal;
@@ -16,14 +17,14 @@ internal class DefaultJsonWalkerTests
 		Assert.That(node, Is.TypeOf<JsonObject>());
 	}
 
-	private static IEnumerable<Type> GetObjectTypes()
-	{
-		yield return typeof(SimpleObject);
-		yield return typeof(ParentObject);
-		yield return typeof(PrimitiveListObject);
-		yield return typeof(ComponentListObject);
-		yield return typeof(ListObject);
-		yield return typeof(DictionaryObject);
-		yield return typeof(PairObject);
-	}
+	private static Type[] GetObjectTypes() =>
+	[
+		typeof(SimpleObject),
+		typeof(ParentObject),
+		typeof(PrimitiveListObject),
+		typeof(ComponentListObject),
+		typeof(ListObject),
+		typeof(DictionaryObject),
+		typeof(PairObject),
+	];
 }

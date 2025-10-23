@@ -1,4 +1,4 @@
-﻿using AssetRipper.Export.UnityProjects.Configuration;
+﻿using AssetRipper.Export.Configuration;
 
 namespace AssetRipper.GUI.Web.Pages.Settings.DropDown;
 
@@ -26,6 +26,7 @@ public sealed class ScriptLanguageVersionDropDownSetting : DropDownSetting<Scrip
 		ScriptLanguageVersion.CSharp9_0 => Localization.CSharpLangageVersionConfig90,
 		ScriptLanguageVersion.CSharp10_0 => Localization.CSharpLangageVersionConfig100,
 		ScriptLanguageVersion.CSharp11_0 => Localization.CSharpLangageVersionConfig110,
+		ScriptLanguageVersion.CSharp12_0 => Localization.CSharpLangageVersionConfig120,
 		ScriptLanguageVersion.Latest => Localization.CSharpLangageVersionConfigLatest,
 		_ => base.GetDisplayName(value),
 	};

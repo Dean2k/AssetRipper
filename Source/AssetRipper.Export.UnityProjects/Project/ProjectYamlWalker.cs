@@ -1,6 +1,5 @@
 ﻿using AssetRipper.Assets;
 using AssetRipper.Assets.Metadata;
-using AssetRipper.IO.Files;
 using AssetRipper.SourceGenerated.Subclasses.SceneObjectIdentifier;
 using AssetRipper.Yaml;
 
@@ -34,8 +33,8 @@ public sealed class ProjectYamlWalker(IExportContainer container) : YamlWalker
 				: sceneObjectIdentifier.TargetPrefab;
 			YamlMappingNode yamlMappingNode = new()
 			{
-				{ new YamlScalarNode("targetObject"), targetObject },
-				{ new YamlScalarNode("targetPrefab"), targetPrefab },
+				{ YamlScalarNode.Create("targetObject"), targetObject },
+				{ YamlScalarNode.Create("targetPrefab"), targetPrefab },
 			};
 			AddNode(yamlMappingNode);
 			return false;
@@ -50,17 +49,17 @@ public sealed class ProjectYamlWalker(IExportContainer container) : YamlWalker
 	{
 		if (pptr.PathID == 0)
 		{
-			return MetaPtr.NullPtr.ExportYaml();
+			return MetaPtr.NullPtr.ExportYaml(container.ExportVersion);
 		}
 		else if (CurrentAsset.Collection.TryGetAsset(pptr, out TAsset? asset))
 		{
-			return container.CreateExportPointer(asset).ExportYaml();
+			return container.CreateExportPointer(asset).ExportYaml(container.ExportVersion);
 		}
 		else
 		{
 			AssetType assetType = container.ToExportType(typeof(TAsset));
 			MetaPtr pointer = MetaPtr.CreateMissingReference(GetClassID(typeof(TAsset)), assetType);
-			return pointer.ExportYaml();
+			return pointer.ExportYaml(container.ExportVersion);
 		}
 	}
 }

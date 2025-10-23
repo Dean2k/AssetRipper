@@ -1,8 +1,8 @@
 ﻿using AssetRipper.Assets.Bundles;
 using AssetRipper.Import.Logging;
 using AssetRipper.Import.Structure.Platforms;
+using AssetRipper.IO.Files;
 using AssetRipper.IO.Files.ResourceFiles;
-using AssetRipper.IO.Files.Utils;
 
 namespace AssetRipper.Import.Structure;
 
@@ -10,12 +10,13 @@ internal sealed partial record class GameInitializer
 {
 	private sealed record class CustomResourceProvider(
 		PlatformGameStructure? PlatformStructure,
-		PlatformGameStructure? MixedStructure)
+		PlatformGameStructure? MixedStructure,
+		FileSystem FileSystem)
 		: IResourceProvider
 	{
 		public ResourceFile? FindResource(string resName)
 		{
-			string fixedName = FilenameUtils.FixResourcePath(resName);
+			string fixedName = SpecialFileNames.FixResourcePath(resName);
 			string? resPath = RequestResource(fixedName);
 			if (resPath is null)
 			{
@@ -23,7 +24,7 @@ internal sealed partial record class GameInitializer
 				return null;
 			}
 
-			ResourceFile resourceFile = new ResourceFile(resPath, fixedName);
+			ResourceFile resourceFile = new ResourceFile(resPath, fixedName, FileSystem);
 			Logger.Info(LogCategory.Import, $"Resource file '{resName}' has been loaded");
 			return resourceFile;
 		}

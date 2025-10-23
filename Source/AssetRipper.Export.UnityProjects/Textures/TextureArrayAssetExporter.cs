@@ -1,6 +1,6 @@
 ﻿using AssetRipper.Assets;
+using AssetRipper.Export.Configuration;
 using AssetRipper.Export.Modules.Textures;
-using AssetRipper.Export.UnityProjects.Configuration;
 using AssetRipper.Import.Logging;
 using AssetRipper.SourceGenerated.Classes.ClassID_117;
 using AssetRipper.SourceGenerated.Classes.ClassID_187;
@@ -15,7 +15,7 @@ public sealed class TextureArrayAssetExporter : BinaryAssetExporter
 {
 	public ImageExportFormat ImageExportFormat { get; private set; }
 
-	public TextureArrayAssetExporter(LibraryConfiguration configuration)
+	public TextureArrayAssetExporter(FullConfiguration configuration)
 	{
 		ImageExportFormat = configuration.ExportSettings.ImageExportFormat;
 	}
@@ -30,7 +30,7 @@ public sealed class TextureArrayAssetExporter : BinaryAssetExporter
 		return exportCollection is not null;
 	}
 
-	public override bool Export(IExportContainer container, IUnityObjectBase asset, string path)
+	public override bool Export(IExportContainer container, IUnityObjectBase asset, string path, FileSystem fileSystem)
 	{
 		bool success;
 		DirectBitmap bitmap;
@@ -75,7 +75,7 @@ public sealed class TextureArrayAssetExporter : BinaryAssetExporter
 
 		if (success)
 		{
-			using FileStream stream = File.Create(path);
+			using Stream stream = fileSystem.File.Create(path);
 			bitmap.Save(stream, ImageExportFormat);
 			return true;
 		}

@@ -69,5 +69,20 @@ public sealed class ViewPage : DefaultPage
 				}
 			}
 		}
+
+		if (Bundle.FailedFiles.Count > 0)
+		{
+			new H2(writer).Close(Localization.FailedFiles);
+			using (new Ul(writer).End())
+			{
+				for (int i = 0; i < Bundle.FailedFiles.Count; i++)
+				{
+					using (new Li(writer).End())
+					{
+						PathLinking.WriteLink(writer, Path.GetFailedFile(i), Bundle.FailedFiles[i].NameFixed);
+					}
+				}
+			}
+		}
 	}
 }

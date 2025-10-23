@@ -10,6 +10,8 @@ internal sealed class EmptyDirectBitmap : DirectBitmap
 
 	public override int PixelSize => 0;
 
+	public override EmptyDirectBitmap GetLayer(int layer) => this;
+
 	public override void FlipX()
 	{
 	}
@@ -21,6 +23,8 @@ internal sealed class EmptyDirectBitmap : DirectBitmap
 	public override void Transpose()
 	{
 	}
+
+	public override EmptyDirectBitmap Crop(Range xRange, Range yRange, Range zRange) => this;
 
 	public override EmptyDirectBitmap DeepClone() => this;
 

@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AssetRipper.NativeDialogs;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 
 namespace AssetRipper.GUI.Web.Pages;
@@ -7,6 +9,27 @@ public static class Commands
 {
 	private const string RootPath = "/";
 	private const string CommandsPath = "/Commands";
+
+	/// <summary>
+	/// For documentation purposes
+	/// </summary>
+	/// <param name="Path">The file system path.</param>
+	internal record PathFormData(string Path);
+
+	internal static RouteHandlerBuilder AcceptsFormDataContainingPath(this RouteHandlerBuilder builder)
+	{
+		return builder.Accepts<PathFormData>("application/x-www-form-urlencoded");
+	}
+
+	private static bool TryGetCreateSubfolder(IFormCollection form)
+	{
+		if (form.TryGetValue("CreateSubfolder", out StringValues values))
+		{
+			return values == "true";
+		}
+
+		return false;
+	}
 
 	public readonly struct LoadFile : ICommand
 	{
@@ -19,9 +42,9 @@ public static class Commands
 			{
 				paths = values;
 			}
-			else if (Dialogs.Supported)
+			else if (NativeDialog.Supported)
 			{
-				Dialogs.OpenFiles.GetUserInput(out paths);
+				paths = await OpenFileDialog.OpenFiles();
 			}
 			else
 			{
@@ -42,23 +65,23 @@ public static class Commands
 		{
 			IFormCollection form = await request.ReadFormAsync();
 
-			string? path;
+			string[]? paths;
 			if (form.TryGetValue("Path", out StringValues values))
 			{
-				path = values;
+				paths = values;
 			}
-			else if (Dialogs.Supported)
+			else if (NativeDialog.Supported)
 			{
-				Dialogs.OpenFolder.GetUserInput(out path);
+				paths = await OpenFolderDialog.OpenFolders();
 			}
 			else
 			{
 				return CommandsPath;
 			}
 
-			if (!string.IsNullOrEmpty(path))
+			if (paths is { Length: > 0 })
 			{
-				GameFileLoader.LoadAndProcess([path]);
+				GameFileLoader.LoadAndProcess(paths);
 			}
 			return null;
 		}
@@ -82,7 +105,9 @@ public static class Commands
 
 			if (!string.IsNullOrEmpty(path))
 			{
-				GameFileLoader.ExportUnityProject(path);
+				bool createSubfolder = TryGetCreateSubfolder(form);
+				path = MaybeAppendTimestampedSubfolder(path, createSubfolder);
+				await GameFileLoader.ExportUnityProject(path);
 			}
 			return null;
 		}
@@ -106,10 +131,24 @@ public static class Commands
 
 			if (!string.IsNullOrEmpty(path))
 			{
-				GameFileLoader.ExportPrimaryContent(path);
+				bool createSubfolder = TryGetCreateSubfolder(form);
+				path = MaybeAppendTimestampedSubfolder(path, createSubfolder);
+				await GameFileLoader.ExportPrimaryContent(path);
 			}
 			return null;
 		}
+	}
+
+	private static string MaybeAppendTimestampedSubfolder(string path, bool append)
+	{
+		if (append)
+		{
+			string timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+			string subfolder = $"AssetRipper_export_{timestamp}";
+			return Path.Combine(path, subfolder);
+		}
+
+		return path;
 	}
 
 	public readonly struct Reset : ICommand

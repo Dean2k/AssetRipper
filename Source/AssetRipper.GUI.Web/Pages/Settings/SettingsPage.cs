@@ -1,4 +1,4 @@
-﻿using AssetRipper.Export.UnityProjects.Configuration;
+﻿using AssetRipper.Export.Configuration;
 using AssetRipper.GUI.Web.Pages.Settings.DropDown;
 using AssetRipper.GUI.Web.Paths;
 using AssetRipper.Primitives;
@@ -10,7 +10,7 @@ public sealed partial class SettingsPage : DefaultPage
 {
 	public static SettingsPage Instance { get; } = new();
 
-	private static LibraryConfiguration Configuration => GameFileLoader.Settings;
+	private static FullConfiguration Configuration => GameFileLoader.Settings;
 
 	public override string GetTitle() => Localization.Settings;
 
@@ -42,10 +42,21 @@ public sealed partial class SettingsPage : DefaultPage
 								{
 									WriteCheckBoxForIgnoreStreamingAssets(writer, Localization.SkipStreamingAssets);
 								}
-
 								using (new Div(writer).WithClass("col").End())
 								{
-									WriteCheckBoxForEnableStaticMeshSeparation(writer, Localization.EnableStaticMeshSeparation);
+									WriteCheckBoxForEnableStaticMeshSeparation(writer, Localization.EnableStaticMeshSeparation, !GameFileLoader.Premium);
+								}
+							}
+
+							using (new Div(writer).WithClass("row").End())
+							{
+								using (new Div(writer).WithClass("col").End())
+								{
+									WriteCheckBoxForRemoveNullableAttributes(writer, Localization.RemoveNullableAttributes);
+								}
+								using (new Div(writer).WithClass("col").End())
+								{
+									WriteCheckBoxForPublicizeAssemblies(writer, Localization.PublicizeAssemblies);
 								}
 							}
 
@@ -59,12 +70,10 @@ public sealed partial class SettingsPage : DefaultPage
 
 							using (new Div(writer).WithClass("row").End())
 							{
-
 								using (new Div(writer).WithClass("col").End())
 								{
 									WriteDropDownForBundledAssetsExportMode(writer);
 								}
-
 								using (new Div(writer).WithClass("col").End())
 								{
 									WriteDropDownForScriptContentLevel(writer);
@@ -84,10 +93,9 @@ public sealed partial class SettingsPage : DefaultPage
 								{
 									WriteCheckBoxForEnablePrefabOutlining(writer, Localization.EnablePrefabOutlining);
 								}
-
 								using (new Div(writer).WithClass("col").End())
 								{
-									WriteCheckBoxForEnableAssetDeduplication(writer, Localization.EnableAssetDeduplication);
+									WriteCheckBoxForEnableAssetDeduplication(writer, Localization.EnableAssetDeduplication, !GameFileLoader.Premium);
 								}
 							}
 
@@ -113,12 +121,10 @@ public sealed partial class SettingsPage : DefaultPage
 								{
 									WriteDropDownForAudioExportFormat(writer);
 								}
-
 								using (new Div(writer).WithClass("col").End())
 								{
 									WriteDropDownForImageExportFormat(writer);
 								}
-
 								using (new Div(writer).WithClass("col").End())
 								{
 									WriteDropDownForLightmapTextureExportFormat(writer);
@@ -160,6 +166,7 @@ public sealed partial class SettingsPage : DefaultPage
 							{
 								using (new Div(writer).WithClass("col").End())
 								{
+									WriteCheckBoxForScriptTypesFullyQualified(writer, Localization.ScriptsUseFullyQualifiedTypeNames);
 								}
 								using (new Div(writer).WithClass("col").End())
 								{
@@ -167,6 +174,7 @@ public sealed partial class SettingsPage : DefaultPage
 								}
 								using (new Div(writer).WithClass("col").End())
 								{
+									WriteCheckBoxForExportUnreadableAssets(writer, Localization.ExportUnreadableAssets);
 								}
 							}
 						}
@@ -205,12 +213,23 @@ public sealed partial class SettingsPage : DefaultPage
 			.Close();
 	}
 
-	private static void WriteCheckBox(TextWriter writer, string label, bool @checked, string id)
+	private static void WriteCheckBox(TextWriter writer, string label, bool @checked, string id, bool disabled = false)
 	{
 		using (new Div(writer).WithClass("form-check").End())
 		{
-			new Input(writer).WithClass("form-check-input").WithType("checkbox").WithValue().WithId(id).WithName(id).MaybeWithChecked(@checked).Close();
-			new Label(writer).WithClass("form-check-label").WithFor(id).Close(label);
+			new Input(writer)
+				.WithClass("form-check-input")
+				.WithType("checkbox")
+				.WithValue()
+				.WithId(id)
+				.WithName(id)
+				.MaybeWithChecked(disabled ? false : @checked)
+				.MaybeWithDisabled(disabled)
+				.Close();
+			new Label(writer)
+				.WithClass("form-check-label" + (disabled ? " text-muted" : ""))
+				.WithFor(id)
+				.Close(label + (disabled ? $" ({Localization.PremiumFeatureNotice})" : ""));
 		}
 	}
 
@@ -225,7 +244,7 @@ public sealed partial class SettingsPage : DefaultPage
 				DropDownItem<T> item = items[i];
 				new Option(writer)
 					.WithValue(item.Value.ToString().ToHtml())
-					.MaybeSelected(EqualityComparer<T>.Default.Equals(item.Value, value))
+					.MaybeWithSelected(EqualityComparer<T>.Default.Equals(item.Value, value))
 					.WithCustomAttribute("option-description", CreateUniqueID(id, i))
 					.Close(item.DisplayName);
 			}
