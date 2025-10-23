@@ -1,7 +1,9 @@
 ﻿using AssetRipper.Assets.Metadata;
+using AssetRipper.Export.Configuration;
 using AssetRipper.Export.UnityProjects;
 using AssetRipper.Export.UnityProjects.Configuration;
 using AssetRipper.Import.Logging;
+using AssetRipper.IO.Files;
 using AssetRipper.Processing;
 using System.IO;
 
@@ -11,7 +13,7 @@ namespace AssetRipper.Console
 	{
 		private static List<string> inputPaths = new List<string>();
 		private static string outputPath;
-		private static LibraryConfiguration settings = LoadSettings();
+		private static FullConfiguration settings = new();
 		private static ExportHandler exportHandler = new(settings);
 		public static ExportHandler ExportHandler
 		{
@@ -47,9 +49,9 @@ namespace AssetRipper.Console
 
 			try
 			{
-				GameData gameData = ExportHandler.LoadAndProcess(inputPaths);
+				GameData gameData = ExportHandler.LoadAndProcess(inputPaths, LocalFileSystem.Instance);
 				PrepareExportDirectory(outputPath);
-				ExportHandler.Export(gameData, outputPath);
+				ExportHandler.Export(gameData, outputPath, LocalFileSystem.Instance);
 			}
 			catch (Exception ex) 
 			{
@@ -58,12 +60,7 @@ namespace AssetRipper.Console
 			}
 		}
 
-		private static LibraryConfiguration LoadSettings()
-		{
-			LibraryConfiguration settings = new();
-			settings.LoadFromDefaultPath();
-			return settings;
-		}
+		
 
 		private static void PrepareExportDirectory(string path)
 		{
