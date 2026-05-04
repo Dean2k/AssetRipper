@@ -18,6 +18,7 @@ public static class GameFileLoader
 	public static GameBundle GameBundle => GameData!.GameBundle;
 	public static IAssemblyManager AssemblyManager => GameData!.AssemblyManager;
 	public static FullConfiguration Settings { get; } = LoadSettings();
+	public static bool Headless { get; set; }
 
 	public static ExportHandler ExportHandler
 	{
@@ -43,6 +44,7 @@ public static class GameFileLoader
 		if (GameData is not null)
 		{
 			GameData = null;
+			GC.Collect();
 			Logger.Info(LogCategory.General, "Data was reset.");
 		}
 	}
@@ -126,6 +128,10 @@ public static class GameFileLoader
 
 	private static async Task<bool> UserConsentsToDeletion()
 	{
+		if (Headless)
+		{
+			return true;
+		}
 		ConfirmationDialog.Options options = new()
 		{
 			Message = Localization.ExportDirectoryDeleteUserConfirmation,

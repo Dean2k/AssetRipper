@@ -1,5 +1,6 @@
 ﻿using AssetRipper.GUI.Web.Documentation;
 using AssetRipper.GUI.Web.Pages;
+using AssetRipper.GUI.Web.Pages.Search;
 using AssetRipper.GUI.Web.Paths;
 using AssetRipper.Web.Content;
 
@@ -52,6 +53,7 @@ public abstract class DefaultPage : HtmlPage
 				WriteViewMenu(writer);
 				WriteExportMenu(writer);
 				WriteLanguageMenu(writer);
+				WriteDevelopmentMenu(writer);
 			}
 		}
 	}
@@ -98,6 +100,13 @@ public abstract class DefaultPage : HtmlPage
 				{
 					new A(writer).WithClass("dropdown-item").WithHref("/").Close(Localization.Home);
 				}
+				if (GameFileLoader.IsLoaded)
+				{
+					using (new Li(writer).End())
+					{
+						new A(writer).WithClass("dropdown-item").WithHref("/Search/View").Close(Localization.Search);
+					}
+				}
 				using (new Li(writer).End())
 				{
 					new A(writer).WithClass("dropdown-item").WithHref("/Settings/Edit").Close(Localization.Settings);
@@ -120,11 +129,7 @@ public abstract class DefaultPage : HtmlPage
 				}
 				using (new Li(writer).End())
 				{
-					new A(writer).WithClass("dropdown-item").WithHref(DocumentationPaths.OpenApi).Close(Localization.OpenApiJson);
-				}
-				using (new Li(writer).End())
-				{
-					new A(writer).WithClass("dropdown-item").WithHref(DocumentationPaths.Swagger).Close(Localization.SwaggerDocumentation);
+					new A(writer).WithClass("dropdown-item").WithHref("/PremiumFeatures").Close(Localization.PremiumFeatures);
 				}
 			}
 		}
@@ -178,6 +183,37 @@ public abstract class DefaultPage : HtmlPage
 		}
 	}
 
+	private static void WriteDevelopmentMenu(TextWriter writer)
+	{
+		using (new Div(writer).WithClass("btn-group dropdown").End())
+		{
+			WriteDropdownButton(writer, Localization.MenuDevelopment);
+			using (new Ul(writer).WithClass("dropdown-menu").End())
+			{
+				using (new Li(writer).End())
+				{
+					new A(writer).WithClass("dropdown-item").WithHref(DocumentationPaths.OpenApi).Close(Localization.OpenApiJson);
+				}
+				using (new Li(writer).End())
+				{
+					new A(writer).WithClass("dropdown-item").WithHref(DocumentationPaths.Swagger).Close(Localization.SwaggerDocumentation);
+				}
+				using (new Li(writer).End())
+				{
+					new A(writer).WithClass("dropdown-item").WithNewTabAttributes().WithHref("https://unity.com/unity-hub").Close(Localization.InstallUnityHub);
+				}
+				if (GameFileLoader.IsLoaded)
+				{
+					string version = GameFileLoader.GameBundle.GetMaxUnityVersion().ToString();
+					using (new Li(writer).End())
+					{
+						new A(writer).WithClass("dropdown-item").WithNewTabAttributes().WithHref($"unityhub://{version}").Close(Localization.InstallUnityEditor);
+					}
+				}
+			}
+		}
+	}
+
 	private static void WriteDropdownButton(TextWriter writer, string buttonText)
 	{
 		new Button(writer).WithClass("btn btn-dark dropdown-toggle mx-0")
@@ -201,7 +237,7 @@ public abstract class DefaultPage : HtmlPage
 		{
 			using (new Div(writer).WithClass("container text-center").End())
 			{
-				writer.Write("&copy; 2025 - AssetRipper - ");
+				writer.Write("&copy; 2026 - AssetRipper - ");
 				new A(writer).WithHref("/Privacy").Close(Localization.Privacy);
 				writer.Write(" - ");
 				new A(writer).WithHref("/Licenses").Close(Localization.Licenses);

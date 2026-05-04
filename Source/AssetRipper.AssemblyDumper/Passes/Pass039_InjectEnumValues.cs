@@ -25,12 +25,26 @@ internal static class Pass039_InjectEnumValues
 		{ "UnityEngine.TextureFormat",
 			new()
 			{
+				("ARGBFloat", 6, ""),
+				("BGR24", 8, ""),
 				("DXT3", 11, ""),
 			} },
 		{ "UnityEditor.TextureImporterFormat",
 			new()
 			{
+				("ARGBFloat", 6, ""),
+				("BGR24", 8, ""),
 				("DXT3", 11, ""),
+			} },
+		{ "UnityEngine.Experimental.Rendering.GraphicsFormat",
+			new()
+			{
+				("L8_UNorm", 53, ""),
+				("A8_UNorm", 54, ""),
+				("A16_UNorm", 55, ""),
+				("A8R8G8B8_SRGB", 87, ""),
+				("A8R8G8B8_UNorm", 88, ""),
+				("A32R32G32B32_SFloat", 89, ""),
 			} },
 		{ "UnityEngine.MeshTopology",
 			new()

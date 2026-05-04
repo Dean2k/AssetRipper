@@ -74,7 +74,7 @@ public static class TextureConverter
 		// despite the name, this packing works for different formats
 		if (texture.LightmapFormatE == TextureUsageMode.NormalmapDXT5nm)
 		{
-			UnpackNormal(bitmap.Bits);
+			UnpackNormal(bitmap);
 		}
 
 		return true;
@@ -177,7 +177,7 @@ public static class TextureConverter
 		// despite the name, this packing works for different formats
 		if (texture.LightmapFormat_C28E == TextureUsageMode.NormalmapDXT5nm)
 		{
-			UnpackNormal(bitmap.Bits);
+			UnpackNormal(bitmap);
 		}
 
 		return true;
@@ -199,11 +199,13 @@ public static class TextureConverter
 			TextureFormat.ARGB4444 => TryConvertToBitmap<ColorARGB16, byte>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
 			TextureFormat.RGB24 => TryConvertToBitmap<ColorRGB<byte>, byte>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
 			TextureFormat.RGBA32 => TryConvertToBitmap<ColorRGBA<byte>, byte>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
-			TextureFormat.ARGB32 => TryConvertToBitmap<ColorARGB32, byte>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
+			TextureFormat.ARGB32 => TryConvertToBitmap<ColorARGB<byte>, byte>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
+			TextureFormat.ARGBFloat => TryConvertToBitmap<ColorARGB<float>, float>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
 			TextureFormat.RGB565 => TryConvertToBitmap<ColorRGB16, byte>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
+			TextureFormat.BGR24 => TryConvertToBitmap<ColorBGR<byte>, byte>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
 			TextureFormat.R16 => TryConvertToBitmap<ColorR<ushort>, ushort>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
 			TextureFormat.RGBA4444 => TryConvertToBitmap<ColorRGBA16, byte>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
-			TextureFormat.BGRA32_14 or TextureFormat.BGRA32_37 => TryConvertToBitmap<ColorBGRA32, byte>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
+			TextureFormat.BGRA32_14 or TextureFormat.BGRA32_37 => TryConvertToBitmap<ColorBGRA<byte>, byte>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
 			TextureFormat.RHalf => TryConvertToBitmap<ColorR<Half>, Half>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
 			TextureFormat.RGHalf => TryConvertToBitmap<ColorRG<Half>, Half>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
 			TextureFormat.RGBAHalf => TryConvertToBitmap<ColorRGBA<Half>, Half>(textureFormat, width, height, depth, imageSize, version, data, out bitmap),
@@ -442,11 +444,17 @@ public static class TextureConverter
 				return RgbConverter.Convert<ColorRGBA<byte>, byte, TColor, TChannelValue>(inputSpan, width, height, outputSpan);
 
 			case TextureFormat.ARGB32:
-				return RgbConverter.Convert<ColorARGB32, byte, TColor, TChannelValue>(inputSpan, width, height, outputSpan);
+				return RgbConverter.Convert<ColorARGB<byte>, byte, TColor, TChannelValue>(inputSpan, width, height, outputSpan);
+
+			case TextureFormat.ARGBFloat:
+				return RgbConverter.Convert<ColorARGB<float>, float, TColor, TChannelValue>(inputSpan, width, height, outputSpan);
+
+			case TextureFormat.BGR24:
+				return RgbConverter.Convert<ColorBGR<byte>, byte, TColor, TChannelValue>(inputSpan, width, height, outputSpan);
 
 			case TextureFormat.BGRA32_14:
 			case TextureFormat.BGRA32_37:
-				return RgbConverter.Convert<ColorBGRA32, byte, TColor, TChannelValue>(inputSpan, width, height, outputSpan);
+				return RgbConverter.Convert<ColorBGRA<byte>, byte, TColor, TChannelValue>(inputSpan, width, height, outputSpan);
 
 			case TextureFormat.R16:
 				return RgbConverter.Convert<ColorR<ushort>, ushort, TColor, TChannelValue>(inputSpan, width, height, outputSpan);
@@ -531,23 +539,35 @@ public static class TextureConverter
 		}
 	}
 
-	private static void UnpackNormal(Span<byte> data)
+	private static void UnpackNormal(DirectBitmap bitmap)
 	{
-		for (int i = 0; i < data.Length; i += 4)
+		if (bitmap is DirectBitmap<ColorRGBA<byte>, byte> rgbaBitmap)
 		{
-			Span<byte> pixelSpan = data.Slice(i, 4);
-			byte r = pixelSpan[3];
-			byte g = pixelSpan[1];
-			byte a = pixelSpan[2];
-			pixelSpan[2] = r;
-			pixelSpan[3] = a;
+			UnpackNormal(rgbaBitmap.Pixels);
+		}
+		else
+		{
+			Logger.Log(LogType.Warning, LogCategory.Export, "UnpackNormal called on unsupported bitmap format. Only RGBA 32 is supported.");
+		}
+	}
+
+	private static void UnpackNormal<T>(Span<T> pixels) where T : unmanaged, IColor<byte>
+	{
+		for (int i = 0; i < pixels.Length; i++)
+		{
+			// Alpha and red are swapped
+			// Blue needs calculated
+			pixels[i].GetChannels(out byte a, out byte g, out _, out byte r);
 
 			const double MagnitudeSqr = 255 * 255;
 			double vr = r * 2.0 - 255.0;
 			double vg = g * 2.0 - 255.0;
-			double hypotenuseSqr = Math.Min(vr * vr + vg * vg, MagnitudeSqr);
-			double b = (Math.Sqrt(MagnitudeSqr - hypotenuseSqr) + 255.0) / 2.0;
-			pixelSpan[0] = (byte)b;
+			double hypotenuseSqr = double.Min(vr * vr + vg * vg, MagnitudeSqr);
+			double vb = double.Sqrt(MagnitudeSqr - hypotenuseSqr);
+			double bExact = (vb + 255.0) / 2.0;
+			byte b = NumericConversion.Convert<double, byte>(bExact / 255.0);
+
+			pixels[i].SetChannels(r, g, b, a);
 		}
 	}
 }
