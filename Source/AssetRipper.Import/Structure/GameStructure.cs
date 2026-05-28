@@ -2,6 +2,7 @@
 using AssetRipper.Import.AssetCreation;
 using AssetRipper.Import.Configuration;
 using AssetRipper.Import.Logging;
+using AssetRipper.Import.Platforms;
 using AssetRipper.Import.Structure.Assembly;
 using AssetRipper.Import.Structure.Assembly.Managers;
 using AssetRipper.Import.Structure.Platforms;
@@ -50,7 +51,7 @@ public sealed class GameStructure : IDisposable
 
 	public static GameStructure Load(IEnumerable<string> paths, FileSystem fileSystem, CoreConfiguration configuration)
 	{
-		List<string> toProcess = ZipExtractor.Process(paths);
+		List<string> toProcess = ZipExtractor.Process(paths, fileSystem);
 		if (toProcess.Count == 0)
 		{
 			throw new ArgumentException("Game files not found", nameof(paths));

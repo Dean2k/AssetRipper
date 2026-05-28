@@ -47,6 +47,9 @@ public static class Pass002_RenameSubnodes
 		{ "Float4" , Vector4FloatName },
 		{ "Fixed_bitset" , "FixedBitset" },
 		{ "GradientNEW" , "Gradient" },
+		{ "ProgramParameters" , "SerializedProgramParameters" },
+		{ "BufferBinding" , "BufferBindingParameter" },
+		{ "ConstantBufferParameter" , "ConstantBuffer" },
 	};
 
 	private static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> enumerable) where T : notnull
@@ -263,6 +266,15 @@ public static class Pass002_RenameSubnodes
 				node.TryRenameSubNode($"m_Bytes_{i}_", $"m_Bytes_{i}");
 			}
 		}
+		else if (node.TypeName == "AudioSource")
+		{
+			if (node.TryGetSubNodeByName("m_Resource", out UniversalNode? resourceNode))
+			{
+				// https://github.com/AssetRipper/AssetRipper/issues/1881
+				resourceNode.TypeName = "PPtr_Object";
+				resourceNode.OriginalTypeName = "PPtr<Object>";// Need to ensure correct merging
+			}
+		}
 		else if (node.IsAssetServerCache(out UniversalNode? modifiedItemTypeNode))
 		{
 			modifiedItemTypeNode.TypeName = "ModifiedItem";
@@ -359,7 +371,17 @@ public static class Pass002_RenameSubnodes
 		}
 		else if (node.TypeName == "ExposedReferenceTable")
 		{
-			node.TryRenameSubNode("m_References", isEditor ? "m_References_Editor" : "m_References_Release");
+			if (isEditor)
+			{
+				// Ensure yaml is emitted as a sequence, rather than a mapping.
+				// There does not seem to be any indication in the type trees about this,
+				// but nonetheless it is required for correct serialization.
+				// https://github.com/Unity-Technologies/Timeline-MessageMarker/blob/711db46387de66c746e9027090c2de786fe99855/Assets/TestScene.unity#L228
+				// https://github.com/AssetRipper/AssetRipper/issues/1667#issuecomment-2646056403
+				// This appears to be a unique case.
+				node.GetSubNodeByName("m_References").TypeName = "vector";
+			}
+			node.RenameSubNode("m_References", isEditor ? "m_References_Editor" : "m_References_Release");
 		}
 		else if (node.TypeName == "ExtensionPropertyValue")
 		{
@@ -631,6 +653,10 @@ public static class Pass002_RenameSubnodes
 		{
 			string suffix = node.Name.Substring(5);
 			node.Name = "m_Source" + suffix;
+		}
+		else if (node.Name == "m_Val")
+		{
+			node.Name = "m_Value";
 		}
 	}
 
